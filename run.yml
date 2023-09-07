@@ -1,0 +1,35 @@
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Set the credentials for a user with appropriate permissions
+$credential = Get-Credential
+
+# Define the target domain controller for your actions
+$domainController = "DC1.contoso.com"
+
+# Example 1: List all users in a specific domain
+$users = Get-ADUser -Filter * -Server $domainController -Credential $credential
+foreach ($user in $users) {
+    Write-Host "Username: $($user.SamAccountName), Name: $($user.Name)"
+}
+
+# Example 2: Create a new user in a different domain
+New-ADUser -Name "NewUser" -SamAccountName "NewUser" -UserPrincipalName "NewUser@contoso.com" -Server $domainController -Credential $credential
+
+# Example 3: Query information from a different domain's group
+$group = Get-ADGroup "GroupName" -Server $domainController -Credential $credential
+$members = Get-ADGroupMember $group -Server $domainController -Credential $credential
+foreach ($member in $members) {
+    Write-Host "Member: $($member.Name)"
+}
+
+# Example 4: Accessing a shared resource in a different domain
+# You can use UNC paths or access remote resources using credentials
+$uncPath = "\\ServerName\ShareName"
+$netUseResult = New-Object PSObject -Property @{
+    "Result" = Invoke-Expression "net use $uncPath /user:$($credential.UserName) $($credential.GetNetworkCredential().Password)"
+}
+Write-Host "Net Use Result: $($netUseResult.Result)"
+
+# Clean up the mapped network drive
+Invoke-Expression "net use $uncPath /delete"
